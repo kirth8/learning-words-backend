@@ -6,6 +6,10 @@
       "use": "@vercel/node"
     }
   ],
+  "functions": {
+    "api/story.js": {
+      "maxDuration": 35
+    },
   "routes": [
     {
       "src": "/(.*)",
