@@ -1,0 +1,27 @@
+{
+  "name": "learning-words-backend",
+  "version": "1.0.0",
+  "description": "Backend para app de historias generadas por IA",
+  "main": "api/story.js",
+  "scripts": {
+    "dev": "node api/story.js",
+    "start": "node api/story.js",
+    "vercel-dev": "vercel dev"
+  },
+  "keywords": [
+    "ai",
+    "stories",
+    "deepseek",
+    "api"
+  ],
+  "author": "Alexis Manchay",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "nodemon": "^3.1.11",
+    "openai": "^6.16.0"
+  }
+}
