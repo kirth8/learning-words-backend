@@ -9,12 +9,12 @@
   "functions": {
     "api/story.js": {
       "maxDuration": 35
-    },
+    }
+  },
   "routes": [
     {
       "src": "/(.*)",
       "dest": "/api/story.js"
     }
   ]
-  }
 }
