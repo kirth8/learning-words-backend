@@ -1,20 +1,17 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/story.js",
-      "use": "@vercel/node"
-    }
-  ],
   "functions": {
     "api/story.js": {
-      "maxDuration": 35
+      "maxDuration": 30
     }
   },
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "/api/story.js"
+      "source": "/api/(.*)",
+      "destination": "/api/story.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/api/story.js"
     }
   ]
 }
