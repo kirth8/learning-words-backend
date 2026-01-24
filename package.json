@@ -2,11 +2,10 @@
   "name": "learning-words-backend",
   "version": "1.0.0",
   "description": "Backend para app de historias generadas por IA",
-  "main": "api/story.js",
+  "main": "server.js",
   "scripts": {
-    "dev": "node api/story.js",
-    "start": "node api/story.js",
-    "vercel-dev": "vercel dev"
+    "dev": "node server.js",
+    "start": "node server.js"
   },
   "keywords": [
     "ai",
