@@ -39,7 +39,8 @@ app.post('/api/generate-story', async (req, res) => {
             keywords = [],
             context = '',
             category = '',
-            level = ''
+            level = '',
+            glossaryLanguage = 'español' 
         } = req.body;
         
         // Validaciones básicas
@@ -67,6 +68,8 @@ app.post('/api/generate-story', async (req, res) => {
         }
         
         // Construir prompt SIMPLE pero efectivo
+
+        // Determinar idioma opuesto para el glosario
         let prompt;
         const isEnglish = language.toLowerCase().includes('ingl') || language.toLowerCase().includes('english');
         
@@ -104,9 +107,9 @@ app.post('/api/generate-story', async (req, res) => {
             ${category ? `Categoría: ${category}` : ''}
             ${level ? `Nivel: ${level}` : ''}
             
-            La historia debe tener 400-500 palabras.
-            Incluye 10 preguntas de comprensión lectora con 4 opciones cada una.
-            Incluye un glosario con 20-25 palabras importantes para aprendices del idioma.
+            La historia debe tener 400-500 palabras en ${language}
+            Incluye 10 preguntas de comprensión lectora con 4 opciones cada una en ${language}
+            Incluye un glosario con 20-25 palabras importantes de la historia, con definiciones claras en ${glossaryLanguage} (el idioma del sistema del usuario)
             
             Responde SOLO con un objeto JSON en este formato:
             {
