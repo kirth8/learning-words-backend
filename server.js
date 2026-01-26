@@ -28,7 +28,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Endpoint principal - VERSIÓN SIMPLE Y FUNCIONAL
+// Endpoint principal - Traer la historia y cuestionario
 app.post('/api/generate-story', async (req, res) => {
     console.log('📨 Request received:', JSON.stringify(req.body, null, 2));
     
@@ -293,6 +293,158 @@ app.post('/api/generate-story', async (req, res) => {
             error: 'Failed to generate story',
             details: error.message,
             suggestion: 'Check server logs'
+        });
+    }
+});
+
+//Endpoint secundario - Para poder traer las preguntes acorde las palabras dadas
+
+app.post('/api/generate-vocab-quiz', async (req, res) => {
+    console.log('📚 Vocab Quiz request:', req.body);
+    
+    try {
+        const { 
+            words = []  // Array de objetos: [{word: "house", language: "en"}, ...]
+        } = req.body;
+        
+        // Validaciones básicas
+        if (!Array.isArray(words) || words.length === 0) {
+            return res.status(400).json({ 
+                success: false,
+                error: 'Words is required and must be a non-empty array' 
+            });
+        }
+        
+        const apiKey = process.env.DEEPSEEK_API_KEY;
+        if (!apiKey) {
+            return res.status(500).json({ 
+                success: false,
+                error: 'API key not configured' 
+            });
+        }
+        
+        // Agrupar palabras por idioma para el prompt
+        const englishWords = words.filter(w => w.language === 'en').map(w => w.word);
+        const spanishWords = words.filter(w => w.language === 'es').map(w => w.word);
+        
+        // Construir prompt MUY simple
+        const prompt = `Create exactly 15 vocabulary multiple-choice questions.
+
+WORDS PROVIDED:
+${englishWords.length > 0 ? `English: ${englishWords.join(', ')}` : ''}
+${spanishWords.length > 0 ? `Spanish: ${spanishWords.join(', ')}` : ''}
+
+RULES:
+1. Create 15 questions total
+2. Each question must have 4 options (A, B, C, D)
+3. For English words: create questions in English
+4. For Spanish words: create questions in Spanish
+5. Mix different question types: definitions, synonyms, usage, context
+
+RESPONSE FORMAT (JSON only):
+{
+  "questions": [
+    {
+      "question": "Question text?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0,
+      "explanation": "Brief explanation"
+    }
+  ]
+}`;
+
+        console.log(`🤖 Generating 15 questions for ${words.length} words`);
+        
+        const startTime = Date.now();
+        
+        // Llamada a DeepSeek
+        const response = await axios.post(
+            'https://api.deepseek.com/v1/chat/completions',
+            {
+                model: 'deepseek-chat',
+                messages: [
+                    { 
+                        role: 'system', 
+                        content: 'Create 15 vocabulary questions. Always return valid JSON with "questions" array.' 
+                    },
+                    { 
+                        role: 'user', 
+                        content: prompt 
+                    }
+                ],
+                max_tokens: 3000,
+                temperature: 0.7,
+                response_format: { type: "json_object" }
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 35000
+            }
+        );
+        
+        const processingTime = Date.now() - startTime;
+        const content = response.data.choices[0].message.content;
+        console.log(`✅ Quiz generated in ${processingTime}ms`);
+        
+        // Parsear respuesta
+        let result;
+        try {
+            result = JSON.parse(content);
+        } catch {
+            // Si falla, crear estructura básica
+            result = { questions: [] };
+        }
+        
+        // Estructura de respuesta simple
+        const quiz = {
+            id: `quiz-${Date.now()}`,
+            title: "Vocabulary Quiz",
+            questionCount: 15,
+            words: words,
+            questions: []
+        };
+        
+        // Procesar preguntas
+        if (result.questions && Array.isArray(result.questions)) {
+            quiz.questions = result.questions.slice(0, 15).map((q, idx) => ({
+                id: `q${idx + 1}`,
+                question: q.question || `Question ${idx + 1}`,
+                options: Array.isArray(q.options) ? q.options.slice(0, 4) : ['A', 'B', 'C', 'D'],
+                correctAnswer: typeof q.correctAnswer === 'number' ? Math.max(0, Math.min(3, q.correctAnswer)) : 0,
+                explanation: q.explanation || 'Correct answer'
+            }));
+        }
+        
+        // Asegurar 15 preguntas
+        while (quiz.questions.length < 15) {
+            quiz.questions.push({
+                id: `q${quiz.questions.length + 1}`,
+                question: `Vocabulary question ${quiz.questions.length + 1}`,
+                options: ['Option A', 'Option B', 'Option C', 'Option D'],
+                correctAnswer: 0,
+                explanation: 'Select the correct option'
+            });
+        }
+        
+        // Respuesta
+        res.json({
+            success: true,
+            data: quiz,
+            meta: {
+                generatedAt: new Date().toISOString(),
+                processingTime: `${processingTime}ms`,
+                tokensUsed: response.data.usage?.total_tokens || 0
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Quiz error:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to generate quiz'
         });
     }
 });
