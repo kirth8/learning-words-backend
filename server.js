@@ -74,14 +74,15 @@ app.post('/api/generate-story', async (req, res) => {
         const isEnglish = language.toLowerCase().includes('ingl') || language.toLowerCase().includes('english');
         
         if (context && context.trim().length > 0) {
-            prompt = `Escribe una historia en ${language} basada en este contexto: "${context}"
+            prompt = `Escribe una historia en el idioma ${language} basada en este contexto: "${context}"
             
             ${keywords.length > 0 ? `Incluye estos elementos: ${keywords.join(', ')}` : ''}
             ${category ? `Categoría: ${category}` : ''}
             ${level ? `Nivel: ${level}` : ''}
             
-            La historia debe tener 400-500 palabras.
+            La historia debe tener 200-300 palabras para el nivel basico, y 400-500 palabras para niveles intermedios o Avanzados.
             Incluye 10 preguntas de comprensión lectora con 4 opciones cada una.
+            Incluye un glosario con 20-25 palabras importantes de la historia y que se encuentren estas palabras en ella, con definiciones claras en el idioma ${glossaryLanguage} (el idioma del sistema del usuario).
             
             Responde SOLO con un objeto JSON en este formato:
             {
@@ -92,24 +93,25 @@ app.post('/api/generate-story', async (req, res) => {
                   "question": "Texto de la pregunta?",
                   "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
                   "correctAnswer": 0,
-                  "explanation": "Explicación breve"
+                  "explanation": "Explicación breve pero explicativa"
                 }
               ],
               "glossary": {
-                "palabra1": "Definición simple",
-                "palabra2": "Definición simple"
+                "palabra1": "Definición corta pero explicativa",
+                "palabra2": "Definición corta pero explicativa"
               }
-            }`;
+            }
+            IMPORTANTE: Para "correctAnswer" usa NÚMEROS: 0 para la primera opción, 1 para la segunda, etc.`;
         } else {
-            prompt = `Escribe una historia en ${language} sobre: ${theme}
+            prompt = `Escribe una historia en el idioma ${language} sobre: ${theme}
             
             ${keywords.length > 0 ? `Incluye estos elementos: ${keywords.join(', ')}` : ''}
             ${category ? `Categoría: ${category}` : ''}
             ${level ? `Nivel: ${level}` : ''}
             
-            La historia debe tener 400-500 palabras en ${language}
+            La historia debe tener 200-300 palabras para el nivel basico, y 400-500 palabras para niveles intermedios o Avanzados, en el idioma ${language}
             Incluye 10 preguntas de comprensión lectora con 4 opciones cada una en ${language}
-            Incluye un glosario con 20-25 palabras importantes de la historia, con definiciones claras en ${glossaryLanguage} (el idioma del sistema del usuario)
+            Incluye un glosario con 20-25 palabras importantes de la historia y que se encuentren estas palabras en ella, con definiciones claras en el idioma ${glossaryLanguage} (el idioma del sistema del usuario).
             
             Responde SOLO con un objeto JSON en este formato:
             {
@@ -120,12 +122,12 @@ app.post('/api/generate-story', async (req, res) => {
                   "question": "Texto de la pregunta?",
                   "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
                   "correctAnswer": 0,
-                  "explanation": "Explicación breve"
+                  "explanation": "Explicación breve pero explicativa"
                 }
               ],
               "glossary": {
-                "palabra1": "Definición simple",
-                "palabra2": "Definición simple"
+                "palabra1": "Definición corta pero explicativa",
+                "palabra2": "Definición corta pero explicativa"
               }
             }
             
@@ -348,7 +350,7 @@ RESPONSE FORMAT (JSON only):
       "question": "Question text?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correctAnswer": 0,
-      "explanation": "Brief explanation"
+      "explanation": "A brief but informative explanation"
     }
   ]
 }`;
