@@ -353,7 +353,8 @@ RESPONSE FORMAT (JSON only):
       "explanation": "A brief but informative explanation"
     }
   ]
-}`;
+}
+  IMPORTANT: For "correctAnswer" use NUMBERS: 0 for the first option, 1 for the second, etc.`;
 
         console.log(`🤖 Generating 15 questions for ${words.length} words`);
         
