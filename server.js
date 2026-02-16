@@ -92,7 +92,7 @@ app.post('/api/generate-story', async (req, res) => {
                 {
                   "question": "Texto de la pregunta?",
                   "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
-                  "correctAnswer": 0,
+                  "correctAnswer": 1, // Ejemplo: usa un índice variado 0-3
                   "explanation": "Explicación breve pero explicativa"
                 }
               ],
@@ -101,7 +101,7 @@ app.post('/api/generate-story', async (req, res) => {
                 "palabra2": "Definición corta pero explicativa"
               }
             }
-            IMPORTANTE: Para "correctAnswer" usa NÚMEROS: 0 para la primera opción, 1 para la segunda, etc.`;
+            IMPORTANTE: Para "correctAnswer" usa NÚMEROS aleatorios entre 0 y 3. No pongas siempre la respuesta correcta en la misma posición.`;
         } else {
             prompt = `Escribe una historia en el idioma ${language} sobre: ${theme}
             
@@ -121,7 +121,7 @@ app.post('/api/generate-story', async (req, res) => {
                 {
                   "question": "Texto de la pregunta?",
                   "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
-                  "correctAnswer": 0,
+                  "correctAnswer": 2, // Ejemplo: usa un índice variado 0-3
                   "explanation": "Explicación breve pero explicativa"
                 }
               ],
@@ -131,7 +131,7 @@ app.post('/api/generate-story', async (req, res) => {
               }
             }
             
-            IMPORTANTE: Para "correctAnswer" usa NÚMEROS: 0 para la primera opción, 1 para la segunda, etc.`;
+            IMPORTANTE: Para "correctAnswer" usa NÚMEROS aleatorios entre 0 y 3. Varía la posición de la respuesta correcta en cada pregunta.`;
         }
         
         console.log(`🤖 Calling DeepSeek: ${language} - ${theme.substring(0, 50)}...`);
@@ -342,6 +342,7 @@ RULES:
 3. For English words: create questions in English
 4. For Spanish words: create questions in Spanish
 5. Mix different question types: definitions, synonyms, usage, context
+6. IMPORTANT: The correct answer (correctAnswer) must be randomized. Do NOT always put it in the same position. Distribute it among 0, 1, 2, and 3.
 
 RESPONSE FORMAT (JSON only):
 {
@@ -349,12 +350,12 @@ RESPONSE FORMAT (JSON only):
     {
       "question": "Question text?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correctAnswer": 0,
+      "correctAnswer": 3, // Example: randomize this index (0-3)
       "explanation": "A brief but informative explanation"
     }
   ]
 }
-  IMPORTANT: For "correctAnswer" use NUMBERS: 0 for the first option, 1 for the second, etc.`;
+  IMPORTANT: For "correctAnswer" use random numbers between 0 and 3. Vary the position of the correct answer in each question.`;
 
         console.log(`🤖 Generating 15 questions for ${words.length} words`);
         
