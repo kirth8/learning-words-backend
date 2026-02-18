@@ -366,8 +366,8 @@ RESPONSE FORMAT (JSON only):
   ]
 }
   IMPORTANT: For "correctAnswer" use random numbers between 0 and 3. Vary the position of the correct answer in each question.
-  Also, make sure the correct answer is evenly distributed across the 10 questions. For example, there should be approximately 3 
-  questions with correctAnswer=0, 2 with correctAnswer=1, 2 with correctAnswer=2, and 3 with correctAnswer=3. This ensures variety 
+  Also, make sure the correct answer is evenly distributed across the 15 questions. For example, there should be approximately 4 
+  questions with correctAnswer=0, 3 with correctAnswer=1, 4 with correctAnswer=2, and 4 with correctAnswer=3. This ensures variety 
   and avoids bias toward any one answer. Vary the position of the correct answer in each question.
   `;
 
