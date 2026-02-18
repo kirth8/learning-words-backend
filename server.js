@@ -101,7 +101,12 @@ app.post('/api/generate-story', async (req, res) => {
                 "palabra2": "Definición corta pero explicativa"
               }
             }
-            IMPORTANTE: Para "correctAnswer" usa NÚMEROS aleatorios entre 0 y 3. No pongas siempre la respuesta correcta en la misma posición.`;
+            IMPORTANTE: Para "correctAnswer" usa NÚMEROS aleatorios entre 0 y 3. No pongas siempre la respuesta correcta en la misma posición.
+            Tambien asegúrate de que la respuesta correcta esté distribuida de manera equilibrada entre las 10 preguntas. Por ejemplo, 
+            que haya aproximadamente 3 preguntas con correctAnswer=0, 2 con correctAnswer=1, 2 con correctAnswer=2 y 3 con 
+            correctAnswer=3. Esto garantiza variedad y evita sesgos hacia una misma posición. Varía la posición de la respuesta
+             correcta en cada pregunta.
+            `;
         } else {
             prompt = `Escribe una historia en el idioma ${language} sobre: ${theme}
             
@@ -131,7 +136,12 @@ app.post('/api/generate-story', async (req, res) => {
               }
             }
             
-            IMPORTANTE: Para "correctAnswer" usa NÚMEROS aleatorios entre 0 y 3. Varía la posición de la respuesta correcta en cada pregunta.`;
+            IMPORTANTE: Para "correctAnswer" usa NÚMEROS aleatorios entre 0 y 3. Varía la posición de la respuesta correcta en cada pregunta.
+            Tambien asegúrate de que la respuesta correcta esté distribuida de manera equilibrada entre las 10 preguntas. Por ejemplo, 
+            que haya aproximadamente 3 preguntas con correctAnswer=0, 2 con correctAnswer=1, 2 con correctAnswer=2 y 3 con 
+            correctAnswer=3. Esto garantiza variedad y evita sesgos hacia una misma posición. Varía la posición de la respuesta
+             correcta en cada pregunta.
+            `;
         }
         
         console.log(`🤖 Calling DeepSeek: ${language} - ${theme.substring(0, 50)}...`);
@@ -355,7 +365,11 @@ RESPONSE FORMAT (JSON only):
     }
   ]
 }
-  IMPORTANT: For "correctAnswer" use random numbers between 0 and 3. Vary the position of the correct answer in each question.`;
+  IMPORTANT: For "correctAnswer" use random numbers between 0 and 3. Vary the position of the correct answer in each question.
+  Also, make sure the correct answer is evenly distributed across the 10 questions. For example, there should be approximately 3 
+  questions with correctAnswer=0, 2 with correctAnswer=1, 2 with correctAnswer=2, and 3 with correctAnswer=3. This ensures variety 
+  and avoids bias toward any one answer. Vary the position of the correct answer in each question.
+  `;
 
         console.log(`🤖 Generating 15 questions for ${words.length} words`);
         
