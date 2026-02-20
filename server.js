@@ -75,73 +75,82 @@ app.post('/api/generate-story', async (req, res) => {
         
         if (context && context.trim().length > 0) {
             prompt = `Escribe una historia en el idioma ${language} basada en este contexto: "${context}"
-            
+
             ${keywords.length > 0 ? `Incluye estos elementos: ${keywords.join(', ')}` : ''}
             ${category ? `Categoría: ${category}` : ''}
             ${level ? `Nivel: ${level}` : ''}
-            
-            La historia debe tener 200-300 palabras para el nivel basico, y 400-500 palabras para niveles intermedios o Avanzados.
+
+            La historia debe tener 200-300 palabras para el nivel básico, y 400-500 palabras para niveles intermedios o avanzados.
             Incluye 10 preguntas de comprensión lectora con 4 opciones cada una.
-            Incluye un glosario con 20-25 palabras importantes de la historia y que se encuentren estas palabras en ella, con definiciones claras en el idioma ${glossaryLanguage} (el idioma del sistema del usuario).
-            
+            Incluye un glosario con 20-25 palabras importantes de la historia (que aparezcan en ella) y con definiciones claras en el idioma ${glossaryLanguage}.
+
             Responde SOLO con un objeto JSON en este formato:
             {
-              "title": "Título de la historia",
-              "content": "Texto completo de la historia aquí...",
-              "questions": [
+            "title": "Título de la historia",
+            "content": "Texto completo de la historia aquí...",
+            "questions": [
                 {
-                  "question": "Texto de la pregunta?",
-                  "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
-                  "correctAnswer": 1, // Ejemplo: usa un índice variado 0-3
-                  "explanation": "Explicación breve pero explicativa"
+                "question": "Texto de la pregunta?",
+                "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
+                "correctAnswer": 1, // Índice de la opción correcta (0, 1, 2 o 3)
+                "explanation": "Explicación breve pero explicativa"
                 }
-              ],
-              "glossary": {
+            ],
+            "glossary": {
                 "palabra1": "Definición corta pero explicativa",
                 "palabra2": "Definición corta pero explicativa"
-              }
             }
-            IMPORTANTE: Para "correctAnswer" usa NÚMEROS aleatorios entre 0 y 3. No pongas siempre la respuesta correcta en la misma posición.
-            Tambien asegúrate de que la respuesta correcta esté distribuida de manera equilibrada entre las 10 preguntas. Por ejemplo, 
-            que haya aproximadamente 3 preguntas con correctAnswer=0, 2 con correctAnswer=1, 2 con correctAnswer=2 y 3 con 
-            correctAnswer=3. Esto garantiza variedad y evita sesgos hacia una misma posición. Varía la posición de la respuesta
-             correcta en cada pregunta.
-            `;
-        } else {
-            prompt = `Escribe una historia en el idioma ${language} sobre: ${theme}
-            
+            }
+
+            INSTRUCCIONES ESTRICTAS PARA "correctAnswer":
+            - Los valores de "correctAnswer" deben ser números enteros: 0, 1, 2 o 3 (0 = primera opción, 1 = segunda, etc.).
+            - La distribución de estos 10 valores debe ser EXACTAMENTE la siguiente:
+            * 3 preguntas con correctAnswer = 0
+            * 2 preguntas con correctAnswer = 1
+            * 2 preguntas con correctAnswer = 2
+            * 3 preguntas con correctAnswer = 3
+            - Esto significa que, por ejemplo, el array de correctAnswer podría ser algo como: [0, 3, 1, 2, 0, 3, 2, 1, 0, 3] (en cualquier orden, siempre que se cumplan las cantidades exactas).
+            - IMPORTANTE: NO uses secuencias predecibles como 0,1,2,3,0,1,2,3,... Mezcla los índices de forma que parezca aleatorio y no siga un patrón obvio.
+            - Asegúrate de que cada uno de los cuatro índices aparezca el número de veces indicado. Verifica internamente antes de entregar el JSON.`;
+            } else {
+                prompt = `Escribe una historia en el idioma ${language} sobre: ${theme}
+
             ${keywords.length > 0 ? `Incluye estos elementos: ${keywords.join(', ')}` : ''}
             ${category ? `Categoría: ${category}` : ''}
             ${level ? `Nivel: ${level}` : ''}
-            
-            La historia debe tener 200-300 palabras para el nivel basico, y 400-500 palabras para niveles intermedios o Avanzados, en el idioma ${language}
-            Incluye 10 preguntas de comprensión lectora con 4 opciones cada una en ${language}
-            Incluye un glosario con 20-25 palabras importantes de la historia y que se encuentren estas palabras en ella, con definiciones claras en el idioma ${glossaryLanguage} (el idioma del sistema del usuario).
-            
+
+            La historia debe tener 200-300 palabras para el nivel básico, y 400-500 palabras para niveles intermedios o avanzados, en el idioma ${language}.
+            Incluye 10 preguntas de comprensión lectora con 4 opciones cada una en ${language}.
+            Incluye un glosario con 20-25 palabras importantes de la historia (que aparezcan en ella) y con definiciones claras en el idioma ${glossaryLanguage}.
+
             Responde SOLO con un objeto JSON en este formato:
             {
-              "title": "Título creativo",
-              "content": "Texto completo de la historia aquí...",
-              "questions": [
+            "title": "Título creativo",
+            "content": "Texto completo de la historia aquí...",
+            "questions": [
                 {
-                  "question": "Texto de la pregunta?",
-                  "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
-                  "correctAnswer": 2, // Ejemplo: usa un índice variado 0-3
-                  "explanation": "Explicación breve pero explicativa"
+                "question": "Texto de la pregunta?",
+                "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
+                "correctAnswer": 2, // Índice de la opción correcta (0, 1, 2 o 3)
+                "explanation": "Explicación breve pero explicativa"
                 }
-              ],
-              "glossary": {
+            ],
+            "glossary": {
                 "palabra1": "Definición corta pero explicativa",
                 "palabra2": "Definición corta pero explicativa"
-              }
             }
-            
-            IMPORTANTE: Para "correctAnswer" usa NÚMEROS aleatorios entre 0 y 3. Varía la posición de la respuesta correcta en cada pregunta.
-            Tambien asegúrate de que la respuesta correcta esté distribuida de manera equilibrada entre las 10 preguntas. Por ejemplo, 
-            que haya aproximadamente 3 preguntas con correctAnswer=0, 2 con correctAnswer=1, 2 con correctAnswer=2 y 3 con 
-            correctAnswer=3. Esto garantiza variedad y evita sesgos hacia una misma posición. Varía la posición de la respuesta
-             correcta en cada pregunta.
-            `;
+            }
+
+            INSTRUCCIONES ESTRICTAS PARA "correctAnswer":
+            - Los valores de "correctAnswer" deben ser números enteros: 0, 1, 2 o 3 (0 = primera opción, 1 = segunda, etc.).
+            - La distribución de estos 10 valores debe ser EXACTAMENTE la siguiente:
+            * 3 preguntas con correctAnswer = 0
+            * 2 preguntas con correctAnswer = 1
+            * 2 preguntas con correctAnswer = 2
+            * 3 preguntas con correctAnswer = 3
+            - Esto significa que, por ejemplo, el array de correctAnswer podría ser algo como: [0, 3, 1, 2, 0, 3, 2, 1, 0, 3] (en cualquier orden, siempre que se cumplan las cantidades exactas).
+            - IMPORTANTE: NO uses secuencias predecibles como 0,1,2,3,0,1,2,3,... Mezcla los índices de forma que parezca aleatorio y no siga un patrón obvio.
+            - Asegúrate de que cada uno de los cuatro índices aparezca el número de veces indicado. Verifica internamente antes de entregar el JSON.`;
         }
         
         console.log(`🤖 Calling DeepSeek: ${language} - ${theme.substring(0, 50)}...`);
@@ -342,34 +351,40 @@ app.post('/api/generate-vocab-quiz', async (req, res) => {
         // Construir prompt MUY simple
         const prompt = `Create exactly 15 vocabulary multiple-choice questions.
 
-WORDS PROVIDED:
-${englishWords.length > 0 ? `English: ${englishWords.join(', ')}` : ''}
-${spanishWords.length > 0 ? `Spanish: ${spanishWords.join(', ')}` : ''}
+        WORDS PROVIDED:
+        ${englishWords.length > 0 ? `English: ${englishWords.join(', ')}` : ''}
+        ${spanishWords.length > 0 ? `Spanish: ${spanishWords.join(', ')}` : ''}
 
-RULES:
-1. Create 15 questions total
-2. Each question must have 4 options (A, B, C, D)
-3. For English words: create questions in English
-4. For Spanish words: create questions in Spanish
-5. Mix different question types: definitions, synonyms, usage, context
-6. IMPORTANT: The correct answer (correctAnswer) must be randomized. Do NOT always put it in the same position. Distribute it among 0, 1, 2, and 3.
+        RULES:
+        1. Create 15 questions total.
+        2. Each question must have 4 options (A, B, C, D).
+        3. For English words: create questions in English.
+        4. For Spanish words: create questions in Spanish.
+        5. Mix different question types: definitions, synonyms, usage, context.
+        6. IMPORTANT: The correct answer (correctAnswer) must be randomized. Do NOT always put it in the same position.
 
-RESPONSE FORMAT (JSON only):
-{
-  "questions": [
-    {
-      "question": "Question text?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correctAnswer": 3, // Example: randomize this index (0-3)
-      "explanation": "A brief but informative explanation"
-    }
-  ]
-}
-  IMPORTANT: For "correctAnswer" use random numbers between 0 and 3. Vary the position of the correct answer in each question.
-  Also, make sure the correct answer is evenly distributed across the 15 questions. For example, there should be approximately 4 
-  questions with correctAnswer=0, 3 with correctAnswer=1, 4 with correctAnswer=2, and 4 with correctAnswer=3. This ensures variety 
-  and avoids bias toward any one answer. Vary the position of the correct answer in each question.
-  `;
+        INSTRUCTIONS FOR "correctAnswer":
+        - Use integer numbers: 0, 1, 2, or 3 (0 = first option, 1 = second, etc.).
+        - The distribution across the 15 questions must be EXACTLY as follows:
+        * 4 questions with correctAnswer = 0
+        * 3 questions with correctAnswer = 1
+        * 4 questions with correctAnswer = 2
+        * 4 questions with correctAnswer = 3
+        - For example, an array of correctAnswer could look like: [0, 2, 3, 1, 0, 3, 2, 1, 0, 2, 3, 1, 0, 3, 2] (any order, as long as the exact counts are met).
+        - CRITICAL: DO NOT use predictable sequences like 0,1,2,3,0,1,2,3,... Shuffle the indices so they appear random and do not follow an obvious pattern.
+        - Double-check that each index appears the required number of times before outputting the JSON.
+
+        RESPONSE FORMAT (JSON only):
+        {
+        "questions": [
+            {
+            "question": "Question text?",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correctAnswer": 3, // Example: randomize this index (0-3)
+            "explanation": "A brief but informative explanation"
+            }
+        ]
+        }`;
 
         console.log(`🤖 Generating 15 questions for ${words.length} words`);
         
