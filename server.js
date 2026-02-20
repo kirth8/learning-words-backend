@@ -360,37 +360,22 @@ app.post('/api/generate-vocab-quiz', async (req, res) => {
         2. Each question must have 4 options (A, B, C, D).
         3. For English words: questions in English. For Spanish words: questions in Spanish.
         4. Mix question types: definitions, synonyms, fill-in-the-blank, context usage.
-
-        MANDATORY DISTRIBUTION FOR correctAnswer:
-        - You MUST assign the correct answer index (0,1,2,3) across the 15 questions with the following exact counts:
-        * correctAnswer = 0: exactly 4 questions
-        * correctAnswer = 1: exactly 3 questions
-        * correctAnswer = 2: exactly 4 questions
-        * correctAnswer = 3: exactly 4 questions
-
-        This is non-negotiable. The array of correctAnswer values must contain 0 four times, 1 three times, 2 four times, and 3 four times, in any order.
-
-        For example, a valid sequence (randomized) could be:
-        [0, 2, 3, 1, 0, 3, 2, 1, 0, 2, 3, 1, 0, 3, 2] – but feel free to shuffle differently.
-
-        STRICT AVOIDANCE:
-        - Do NOT put most correct answers in position 1 (index 1). That would violate the distribution.
-        - Do NOT use simple repeating patterns like 0,1,2,3,0,1,2,3... because that would be predictable and not meet the exact counts in a random order.
-        - Ensure that no index appears more than 4 times and none appears less than 3 times.
-
-        Before outputting the JSON, double-check that the counts are exactly as specified. If they are not, adjust the indices until they match.
+        5. IMPORTANT: The correct answer MUST ALWAYS be the FIRST option (index 0). That means in the "options" array, the correct answer should be the first element.
+        6. The other three options (index 1,2,3) must be incorrect but plausible distractors.
 
         RESPONSE FORMAT (JSON only):
         {
         "questions": [
             {
             "question": "Question text?",
-            "options": ["Option A", "Option B", "Option C", "Option D"],
-            "correctAnswer": 3, // Must be 0,1,2,3 and comply with the distribution above
+            "options": ["Correct answer", "Distractor 1", "Distractor 2", "Distractor 3"],
+            "correctAnswer": 0, // Always 0
             "explanation": "Brief but informative explanation"
             }
         ]
-        }`;
+        }
+
+        Remember: correctAnswer must ALWAYS be 0. The correct option must be the first one.`;
 
         console.log(`🤖 Generating 15 questions for ${words.length} words`);
         
