@@ -358,21 +358,27 @@ app.post('/api/generate-vocab-quiz', async (req, res) => {
         RULES:
         1. Create 15 questions total.
         2. Each question must have 4 options (A, B, C, D).
-        3. For English words: create questions in English.
-        4. For Spanish words: create questions in Spanish.
-        5. Mix different question types: definitions, synonyms, usage, context.
-        6. IMPORTANT: The correct answer (correctAnswer) must be randomized. Do NOT always put it in the same position.
+        3. For English words: questions in English. For Spanish words: questions in Spanish.
+        4. Mix question types: definitions, synonyms, fill-in-the-blank, context usage.
 
-        INSTRUCTIONS FOR "correctAnswer":
-        - Use integer numbers: 0, 1, 2, or 3 (0 = first option, 1 = second, etc.).
-        - The distribution across the 15 questions must be EXACTLY as follows:
-        * 4 questions with correctAnswer = 0
-        * 3 questions with correctAnswer = 1
-        * 4 questions with correctAnswer = 2
-        * 4 questions with correctAnswer = 3
-        - For example, an array of correctAnswer could look like: [0, 2, 3, 1, 0, 3, 2, 1, 0, 2, 3, 1, 0, 3, 2] (any order, as long as the exact counts are met).
-        - CRITICAL: DO NOT use predictable sequences like 0,1,2,3,0,1,2,3,... Shuffle the indices so they appear random and do not follow an obvious pattern.
-        - Double-check that each index appears the required number of times before outputting the JSON.
+        MANDATORY DISTRIBUTION FOR correctAnswer:
+        - You MUST assign the correct answer index (0,1,2,3) across the 15 questions with the following exact counts:
+        * correctAnswer = 0: exactly 4 questions
+        * correctAnswer = 1: exactly 3 questions
+        * correctAnswer = 2: exactly 4 questions
+        * correctAnswer = 3: exactly 4 questions
+
+        This is non-negotiable. The array of correctAnswer values must contain 0 four times, 1 three times, 2 four times, and 3 four times, in any order.
+
+        For example, a valid sequence (randomized) could be:
+        [0, 2, 3, 1, 0, 3, 2, 1, 0, 2, 3, 1, 0, 3, 2] – but feel free to shuffle differently.
+
+        STRICT AVOIDANCE:
+        - Do NOT put most correct answers in position 1 (index 1). That would violate the distribution.
+        - Do NOT use simple repeating patterns like 0,1,2,3,0,1,2,3... because that would be predictable and not meet the exact counts in a random order.
+        - Ensure that no index appears more than 4 times and none appears less than 3 times.
+
+        Before outputting the JSON, double-check that the counts are exactly as specified. If they are not, adjust the indices until they match.
 
         RESPONSE FORMAT (JSON only):
         {
@@ -380,8 +386,8 @@ app.post('/api/generate-vocab-quiz', async (req, res) => {
             {
             "question": "Question text?",
             "options": ["Option A", "Option B", "Option C", "Option D"],
-            "correctAnswer": 3, // Example: randomize this index (0-3)
-            "explanation": "A brief but informative explanation"
+            "correctAnswer": 3, // Must be 0,1,2,3 and comply with the distribution above
+            "explanation": "Brief but informative explanation"
             }
         ]
         }`;
