@@ -433,14 +433,74 @@ app.post('/api/generate-vocab-quiz', async (req, res) => {
         
         // Procesar preguntas
         if (result.questions && Array.isArray(result.questions)) {
-            quiz.questions = result.questions.slice(0, 15).map((q, idx) => ({
-                id: `q${idx + 1}`,
-                question: q.question || `Question ${idx + 1}`,
-                options: Array.isArray(q.options) ? q.options.slice(0, 4) : ['A', 'B', 'C', 'D'],
-                correctAnswer: typeof q.correctAnswer === 'number' ? Math.max(0, Math.min(3, q.correctAnswer)) : 0,
-                explanation: q.explanation || 'Correct answer'
-            }));
+            // Función para rotar opciones
+            function rotateOptions(options, targetPosition) {
+                const correctAnswer = options[0];
+                const distractors = options.slice(1);
+                const newOptions = [];
+                for (let i = 0; i < 4; i++) {
+                    if (i === targetPosition) {
+                        newOptions[i] = correctAnswer;
+                    } else {
+                        const distractorIndex = i < targetPosition ? i : i - 1;
+                        newOptions[i] = distractors[distractorIndex];
+                    }
+                }
+                return newOptions;
+            }
+
+            // Crear distribución deseada: 4 ceros, 3 unos, 4 doses, 4 treses
+            const distribution = [];
+            for (let i = 0; i < 4; i++) distribution.push(0);
+            for (let i = 0; i < 3; i++) distribution.push(1);
+            for (let i = 0; i < 4; i++) distribution.push(2);
+            for (let i = 0; i < 4; i++) distribution.push(3);
+
+            // Barajar la distribución
+            function shuffleArray(arr) {
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                return arr;
+            }
+            const shuffledDistribution = shuffleArray([...distribution]);
+
+            // Mapear preguntas con la distribución
+            quiz.questions = result.questions.slice(0, 15).map((q, idx) => {
+                const targetPosition = shuffledDistribution[idx];
+                
+                // Asegurar que tenemos un array de 4 opciones
+                let originalOptions = Array.isArray(q.options) ? q.options.slice(0, 4) : ['A', 'B', 'C', 'D'];
+                while (originalOptions.length < 4) {
+                    originalOptions.push(`Option ${originalOptions.length + 1}`);
+                }
+
+                // Verificar que la respuesta correcta está en índice 0 (como pedimos)
+                const correctAnswerIndex = typeof q.correctAnswer === 'number' ? q.correctAnswer : 0;
+                if (correctAnswerIndex !== 0 && correctAnswerIndex < originalOptions.length) {
+                    // Mover la respuesta correcta al inicio
+                    const correct = originalOptions[correctAnswerIndex];
+                    const others = originalOptions.filter((_, i) => i !== correctAnswerIndex);
+                    originalOptions = [correct, ...others];
+                }
+
+                // Rotar opciones para colocar la respuesta correcta en targetPosition
+                const rotatedOptions = rotateOptions(originalOptions, targetPosition);
+
+                return {
+                    id: `q${idx + 1}`,
+                    question: q.question || `Question ${idx + 1}`,
+                    options: rotatedOptions,
+                    correctAnswer: targetPosition,
+                    explanation: q.explanation || 'Correct answer'
+                };
+            });
+        } else {
+            quiz.questions = [];
         }
+
+
         
         // Asegurar 15 preguntas
         while (quiz.questions.length < 15) {
