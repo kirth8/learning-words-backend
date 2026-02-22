@@ -1,13 +1,59 @@
+require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
+const { createClient } = require('@supabase/supabase-js');
+const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+app.use(cors());
 app.use(express.json());
+
+// Configuración de Supabase
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+let supabase;
+
+if (supabaseUrl && supabaseAnonKey) {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+} else {
+    console.warn('⚠️ SUPABASE_URL o SUPABASE_ANON_KEY no configuradas en el backend.');
+}
+
+// Middleware de seguridad
+const requireAuth = async (req, res, next) => {
+    if (!supabase) {
+        console.warn('⚠️ Supabase no configurado, bloqueando petición.');
+        return res.status(500).json({ success: false, error: 'Server Auth Not Configured' });
+    }
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.warn('❌ Auth header missing or invalid');
+        return res.status(401).json({ success: false, error: 'Unauthorized: Missing or invalid token' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (error || !user) {
+            console.error('❌ Auth error:', error?.message);
+            return res.status(401).json({ success: false, error: 'Unauthorized: Invalid token' });
+        }
+
+        req.user = user; // Usuario autenticado
+        next();
+    } catch (err) {
+        console.error('❌ Auth exception:', err.message);
+        return res.status(401).json({ success: false, error: 'Unauthorized: Error verifying token' });
+    }
+};
+
 
 // Health check
 app.get('/', (req, res) => {
-    res.json({ 
+    res.json({
         status: 'online',
         service: 'Story Generator API',
         deployedOn: 'Render.com',
@@ -29,50 +75,50 @@ app.get('/health', (req, res) => {
 });
 
 // Endpoint principal - Traer la historia y cuestionario
-app.post('/api/generate-story', async (req, res) => {
+app.post('/api/generate-story', requireAuth, async (req, res) => {
     console.log('📨 Request received:', JSON.stringify(req.body, null, 2));
-    
+
     try {
-        const { 
-            language = 'español', 
-            theme = 'aventura', 
+        const {
+            language = 'español',
+            theme = 'aventura',
             keywords = [],
             context = '',
             category = '',
             level = '',
-            glossaryLanguage = 'español' 
+            glossaryLanguage = 'español'
         } = req.body;
-        
+
         // Validaciones básicas
         if (!language || typeof language !== 'string') {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: 'Language is required and must be a string' 
+                error: 'Language is required and must be a string'
             });
         }
-        
+
         if (!theme || typeof theme !== 'string') {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: 'Theme is required and must be a string' 
+                error: 'Theme is required and must be a string'
             });
         }
-        
+
         const apiKey = process.env.DEEPSEEK_API_KEY;
         if (!apiKey) {
             console.error('❌ API key not configured');
-            return res.status(500).json({ 
+            return res.status(500).json({
                 success: false,
-                error: 'API key not configured on Render. Add DEEPSEEK_API_KEY environment variable.' 
+                error: 'API key not configured on Render. Add DEEPSEEK_API_KEY environment variable.'
             });
         }
-        
+
         // Construir prompt SIMPLE pero efectivo
 
         // Determinar idioma opuesto para el glosario
         let prompt;
         const isEnglish = language.toLowerCase().includes('ingl') || language.toLowerCase().includes('english');
-        
+
         if (context && context.trim().length > 0) {
             prompt = `Escribe una historia en el idioma ${language} basada en este contexto: "${context}"
 
@@ -112,8 +158,8 @@ app.post('/api/generate-story', async (req, res) => {
             - Esto significa que, por ejemplo, el array de correctAnswer podría ser algo como: [0, 3, 1, 2, 0, 3, 2, 1, 0, 3] (en cualquier orden, siempre que se cumplan las cantidades exactas).
             - IMPORTANTE: NO uses secuencias predecibles como 0,1,2,3,0,1,2,3,... Mezcla los índices de forma que parezca aleatorio y no siga un patrón obvio.
             - Asegúrate de que cada uno de los cuatro índices aparezca el número de veces indicado. Verifica internamente antes de entregar el JSON.`;
-            } else {
-                prompt = `Escribe una historia en el idioma ${language} sobre: ${theme}
+        } else {
+            prompt = `Escribe una historia en el idioma ${language} sobre: ${theme}
 
             ${keywords.length > 0 ? `Incluye estos elementos: ${keywords.join(', ')}` : ''}
             ${category ? `Categoría: ${category}` : ''}
@@ -152,24 +198,24 @@ app.post('/api/generate-story', async (req, res) => {
             - IMPORTANTE: NO uses secuencias predecibles como 0,1,2,3,0,1,2,3,... Mezcla los índices de forma que parezca aleatorio y no siga un patrón obvio.
             - Asegúrate de que cada uno de los cuatro índices aparezca el número de veces indicado. Verifica internamente antes de entregar el JSON.`;
         }
-        
+
         console.log(`🤖 Calling DeepSeek: ${language} - ${theme.substring(0, 50)}...`);
-        
+
         const startTime = Date.now();
-        
+
         // Llamada a DeepSeek
         const response = await axios.post(
             'https://api.deepseek.com/v1/chat/completions',
             {
                 model: 'deepseek-chat',
                 messages: [
-                    { 
-                        role: 'system', 
-                        content: 'Eres un asistente que siempre responde con JSON válido. Usa "correctAnswer" con números 0-3 para indicar la opción correcta (0=A, 1=B, 2=C, 3=D).' 
+                    {
+                        role: 'system',
+                        content: 'Eres un asistente que siempre responde con JSON válido. Usa "correctAnswer" con números 0-3 para indicar la opción correcta (0=A, 1=B, 2=C, 3=D).'
                     },
-                    { 
-                        role: 'user', 
-                        content: prompt 
+                    {
+                        role: 'user',
+                        content: prompt
                     }
                 ],
                 max_tokens: 3000,
@@ -184,11 +230,11 @@ app.post('/api/generate-story', async (req, res) => {
                 timeout: 55000
             }
         );
-        
+
         const processingTime = Date.now() - startTime;
         const content = response.data.choices[0].message.content;
         console.log(`✅ DeepSeek responded in ${processingTime}ms`);
-        
+
         // Parsear respuesta
         let result;
         try {
@@ -219,7 +265,7 @@ app.post('/api/generate-story', async (req, res) => {
                 };
             }
         }
-        
+
         // Validar y completar estructura
         const finalResult = {
             id: `story-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -232,27 +278,27 @@ app.post('/api/generate-story', async (req, res) => {
             glossary: result.glossary || {},
             language: isEnglish ? 'en' : 'es'
         };
-        
+
         // Procesar preguntas
         if (result.questions && Array.isArray(result.questions)) {
             finalResult.questions = result.questions.map((q, idx) => ({
                 id: `q${idx + 1}`,
                 question: q.question || (isEnglish ? `Question ${idx + 1}` : `Pregunta ${idx + 1}`),
-                options: q.options || (isEnglish 
+                options: q.options || (isEnglish
                     ? ['Option A', 'Option B', 'Option C', 'Option D']
                     : ['Opción A', 'Opción B', 'Opción C', 'Opción D']),
                 correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-                explanation: q.explanation || (isEnglish 
-                    ? 'Correct answer based on the story.' 
+                explanation: q.explanation || (isEnglish
+                    ? 'Correct answer based on the story.'
                     : 'Respuesta correcta según la historia.')
             }));
         }
-        
+
         // Asegurar 10 preguntas
         while (finalResult.questions.length < 10) {
             finalResult.questions.push({
                 id: `q${finalResult.questions.length + 1}`,
-                question: isEnglish 
+                question: isEnglish
                     ? `Comprehension question ${finalResult.questions.length + 1} about the story`
                     : `Pregunta de comprensión ${finalResult.questions.length + 1} sobre la historia`,
                 options: isEnglish
@@ -264,10 +310,10 @@ app.post('/api/generate-story', async (req, res) => {
                     : 'Consulta la historia para contexto.'
             });
         }
-        
+
         // Limitar a 10 preguntas
         finalResult.questions = finalResult.questions.slice(0, 10);
-        
+
         // Enviar respuesta
         res.json({
             success: true,
@@ -280,11 +326,11 @@ app.post('/api/generate-story', async (req, res) => {
                 deployedOn: 'Render.com'
             }
         });
-        
+
     } catch (error) {
         console.error('❌ Error details:', error.message);
         console.error('❌ Error stack:', error.stack);
-        
+
         if (error.code === 'ECONNABORTED') {
             return res.status(504).json({
                 success: false,
@@ -292,7 +338,7 @@ app.post('/api/generate-story', async (req, res) => {
                 suggestion: 'Try with a simpler theme'
             });
         }
-        
+
         if (error.response?.status === 402) {
             return res.status(402).json({
                 success: false,
@@ -300,7 +346,7 @@ app.post('/api/generate-story', async (req, res) => {
                 solution: 'Add credit at platform.deepseek.com'
             });
         }
-        
+
         if (error.response?.status === 401) {
             return res.status(401).json({
                 success: false,
@@ -308,7 +354,7 @@ app.post('/api/generate-story', async (req, res) => {
                 solution: 'Check DEEPSEEK_API_KEY environment variable'
             });
         }
-        
+
         res.status(500).json({
             success: false,
             error: 'Failed to generate story',
@@ -320,34 +366,34 @@ app.post('/api/generate-story', async (req, res) => {
 
 //Endpoint secundario - Para poder traer las preguntes acorde las palabras dadas
 
-app.post('/api/generate-vocab-quiz', async (req, res) => {
+app.post('/api/generate-vocab-quiz', requireAuth, async (req, res) => {
     console.log('📚 Vocab Quiz request:', req.body);
-    
+
     try {
-        const { 
+        const {
             words = []  // Array de objetos: [{word: "house", language: "en"}, ...]
         } = req.body;
-        
+
         // Validaciones básicas
         if (!Array.isArray(words) || words.length === 0) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: 'Words is required and must be a non-empty array' 
+                error: 'Words is required and must be a non-empty array'
             });
         }
-        
+
         const apiKey = process.env.DEEPSEEK_API_KEY;
         if (!apiKey) {
-            return res.status(500).json({ 
+            return res.status(500).json({
                 success: false,
-                error: 'API key not configured' 
+                error: 'API key not configured'
             });
         }
-        
+
         // Agrupar palabras por idioma para el prompt
         const englishWords = words.filter(w => w.language === 'en').map(w => w.word);
         const spanishWords = words.filter(w => w.language === 'es').map(w => w.word);
-        
+
         // Construir prompt MUY simple
         const prompt = `Create exactly 15 vocabulary multiple-choice questions.
 
@@ -378,22 +424,22 @@ app.post('/api/generate-vocab-quiz', async (req, res) => {
         Remember: correctAnswer must ALWAYS be 0. The correct option must be the first one.`;
 
         console.log(`🤖 Generating 15 questions for ${words.length} words`);
-        
+
         const startTime = Date.now();
-        
+
         // Llamada a DeepSeek
         const response = await axios.post(
             'https://api.deepseek.com/v1/chat/completions',
             {
                 model: 'deepseek-chat',
                 messages: [
-                    { 
-                        role: 'system', 
-                        content: 'Create 15 vocabulary questions. Always return valid JSON with "questions" array.' 
+                    {
+                        role: 'system',
+                        content: 'Create 15 vocabulary questions. Always return valid JSON with "questions" array.'
                     },
-                    { 
-                        role: 'user', 
-                        content: prompt 
+                    {
+                        role: 'user',
+                        content: prompt
                     }
                 ],
                 max_tokens: 3000,
@@ -408,11 +454,11 @@ app.post('/api/generate-vocab-quiz', async (req, res) => {
                 timeout: 35000
             }
         );
-        
+
         const processingTime = Date.now() - startTime;
         const content = response.data.choices[0].message.content;
         console.log(`✅ Quiz generated in ${processingTime}ms`);
-        
+
         // Parsear respuesta
         let result;
         try {
@@ -421,7 +467,7 @@ app.post('/api/generate-vocab-quiz', async (req, res) => {
             // Si falla, crear estructura básica
             result = { questions: [] };
         }
-        
+
         // Estructura de respuesta simple
         const quiz = {
             id: `quiz-${Date.now()}`,
@@ -430,7 +476,7 @@ app.post('/api/generate-vocab-quiz', async (req, res) => {
             words: words,
             questions: []
         };
-        
+
         // Procesar preguntas
         if (result.questions && Array.isArray(result.questions)) {
             // Función para rotar opciones
@@ -469,7 +515,7 @@ app.post('/api/generate-vocab-quiz', async (req, res) => {
             // Mapear preguntas con la distribución
             quiz.questions = result.questions.slice(0, 15).map((q, idx) => {
                 const targetPosition = shuffledDistribution[idx];
-                
+
                 // Asegurar que tenemos un array de 4 opciones
                 let originalOptions = Array.isArray(q.options) ? q.options.slice(0, 4) : ['A', 'B', 'C', 'D'];
                 while (originalOptions.length < 4) {
@@ -501,7 +547,7 @@ app.post('/api/generate-vocab-quiz', async (req, res) => {
         }
 
 
-        
+
         // Asegurar 15 preguntas
         while (quiz.questions.length < 15) {
             quiz.questions.push({
@@ -512,7 +558,7 @@ app.post('/api/generate-vocab-quiz', async (req, res) => {
                 explanation: 'Select the correct option'
             });
         }
-        
+
         // Respuesta
         res.json({
             success: true,
@@ -523,13 +569,38 @@ app.post('/api/generate-vocab-quiz', async (req, res) => {
                 tokensUsed: response.data.usage?.total_tokens || 0
             }
         });
-        
+
     } catch (error) {
         console.error('❌ Quiz error:', error.message);
         res.status(500).json({
             success: false,
             error: 'Failed to generate quiz'
         });
+    }
+});
+
+// Endpoint Proxy para Diccionario Merriam-Webster
+app.get('/api/dictionary/:word', requireAuth, async (req, res) => {
+    const { word } = req.params;
+    const apiKey = process.env.MW_SPANISH_KEY;
+
+    if (!apiKey) {
+        return res.status(500).json({ success: false, error: 'MW_SPANISH_KEY not configured on server' });
+    }
+
+    try {
+        // Hacemos la llamada desde el backend, ocultando la clave de la aplicación pública
+        const url = `https://www.dictionaryapi.com/api/v3/references/spanish/json/${encodeURIComponent(word)}?key=${apiKey}`;
+        const response = await axios.get(url, { timeout: 15000 });
+        res.json(response.data);
+    } catch (error) {
+        console.error('❌ Dictionary proxy error:', error.message);
+
+        if (error.response) {
+            return res.status(error.response.status).json({ success: false, error: 'Error from dictionary API' });
+        }
+
+        res.status(500).json({ success: false, error: 'Failed to fetch dictionary data' });
     }
 });
 
