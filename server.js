@@ -57,7 +57,7 @@ app.get('/', (req, res) => {
         status: 'online',
         service: 'Story Generator API',
         deployedOn: 'Render.com',
-        timeout: '60 seconds',
+        timeout: '5 minutes (story) / 3 minutes (quiz)',
         endpoints: {
             generateStory: 'POST /api/generate-story'
         },
@@ -227,7 +227,7 @@ app.post('/api/generate-story', requireAuth, async (req, res) => {
                     'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json'
                 },
-                timeout: 55000
+                timeout: 300000  // 5 minutos — DeepSeek puede tardar 60-90s con historias largas
             }
         );
 
@@ -451,7 +451,7 @@ app.post('/api/generate-vocab-quiz', requireAuth, async (req, res) => {
                     'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json'
                 },
-                timeout: 35000
+                timeout: 180000  // 3 minutos para el quiz de vocabulario
             }
         );
 
